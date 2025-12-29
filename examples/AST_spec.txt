@@ -1,0 +1,151 @@
+AST SPECIFICATION
+=================
+
+This document defines the abstract syntax tree (AST), invariants,
+and normalization semantics used in this symbolic calculus engine.
+
+The AST represents algebraic expressions after normalization in a canonical,
+rule-based form suitable for symbolic differentiation and integration.
+
+
+------------------------------------------------------------
+Section 1: Node Types
+------------------------------------------------------------
+
+1. Const
+---------
+Structure:
+    {"type": "const", "value": val}
+
+Represents a numeric constant.
+
+
+2. Var
+-------
+Structure:
+    {"type": "var", "variable": "x"}
+
+Represents the single variable of the engine.
+The variable name is stored for display purposes only.
+All semantic rules assume a single logical variable, regardless of name.
+
+
+3. Power
+---------
+Structure:
+    {"type": "power", "base": <var>, "exp": n}
+
+Represents a monomial power of a single variable.
+
+
+4. Mul
+-------
+Structure:
+    {"type": "mul", "const": c, "expr": <expression>}
+
+Represents a constant multiple of an expression.
+
+`mul` is the only node that may contain a numeric scalar coefficient.
+Products involving more than a scalar coefficient must be represented using `prod`.
+
+5. Prod
+--------
+Structure:
+    {"type": "prod", "factors": [<atomic expressions>]}
+
+Represents a product of atomic expressions.
+
+
+6. Sum
+-------
+Structure:
+    {"type": "sum", "terms": [<expression>, <expression>, ...]}
+
+Represents a linear combination of expressions.
+
+7. Func
+--------
+Structure:
+    {"type": "func", "name": ∈ {"sin", "cos", "exp"}, "arg": <var>}
+
+Represents a basic mathematical function.
+
+
+------------------------------------------------------------
+Section 2: Invariants & Semantic Rules
+------------------------------------------------------------
+
+1. Const
+---------
+- Any Numeric Constant is allowed.
+- Internally represented as int or Fraction.
+- Fractions are used to preserve exact symbolic results.
+- Floating-point values are used only for display (decimal mode).
+
+
+2. Var
+-------
+- Only one logical variable is supported by the engine.
+- All `var` nodes must refer to the same logical variable.
+- All calculus rules operate assuming this single variable.
+
+
+3. Power
+---------
+- Power represents a monomial power only.
+- Base must be a `var` node.
+- Exponent must be an integer >= 0 at input.
+- Exponent = 1 normalizes to `var`.
+- Exponent = 0 normalizes to `const(1)`.
+- Negative exponents are not allowed.
+
+
+4. Mul
+-------
+- Represents a constant multiple of an expression.
+- `expr` must NOT be a `const`.
+- The `expr` field may be any valid non-const expression, including `prod`.
+- If `const = 0`, normalize to `const(0)`.
+- If `const = 1`, normalize to `expr`.
+- Nested constant multiplication must not exist after normalization.
+- `expr` must NOT be a `mul` afrer normalization.
+
+
+5. Prod
+--------
+- Must contain at least two factors after normalization.
+- Factors must be atomic(`var`, `power`, `func`).
+- Factors must not contain `sum` expressions.
+- Any constant factors must be absorbed into a single scalar coefficient(represented using `mul`).
+- Nested `prod` may appear in input but must be flattened.
+
+6. Sum
+-------
+- Must contain at least two terms after normalization.
+- Terms may be any valid expression.
+- Zero terms must be removed.
+- If only one non-zero term remains, normalize to that term.
+- Nested `sum` nodes may appear in input but must be flattened.
+
+7. Func
+--------
+- Argument must be a `var`.
+- Function name must be one of `{sin, cos, exp}`.
+- Functions are atomic; no algebraic simplification is applied.
+
+
+------------------------------------------------------------
+Section 3: Normalization Policy
+------------------------------------------------------------
+
+- Normalization is a bottom-up process (children first).
+- Normalization may change node types.
+- Normalization must produce a canonical representation.
+- Normalization must eliminate structurally redundant representations.
+- Normalization applies ONLY to expression results, never to step explanations.
+- After normalization, all AST invariants must be satisfied.
+
+
+------------------------------------------------------------
+End of Specification
+------------------------------------------------------------
