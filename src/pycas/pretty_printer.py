@@ -59,6 +59,9 @@ def to_string(expr, mode="fraction", var_name = "x"):
 
         if constant == -1:
             return f"-{inner_str}"
+        
+        if constant == 1:
+            return inner_str
 
         constant_str = to_string({"type": "const", "value": constant}, mode)
         return f"{constant_str}{inner_str}"

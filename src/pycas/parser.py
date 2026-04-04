@@ -227,7 +227,7 @@ def parse_term(tokens, pos):
 
     if token is not None and token[0] == "OP" and token[1] == "-":
         unary_minus, new_pos = consume(tokens, pos)
-        next_term, new_pos = parse_term(tokens, new_pos)
+        next_term, new_pos = parse_power(tokens, new_pos)
         ast = {"type": "mul", "const": -1, "expr": next_term}
         return ast, new_pos
     
