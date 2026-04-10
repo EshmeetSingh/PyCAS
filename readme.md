@@ -19,6 +19,15 @@ Try:
 - `sin(x) + x^2`
 - `exp(x) + cos(x)`
 
+## 👀 Demo Preview
+![PyCAS_UI](assets/pycas_ui.png)
+![PyCAS UI_DEMO](assets/pycas_demo.png)
+
+Example shown:
+- Expression normalization
+- Symbolic integration
+- Step-by-step rule application
+
 ---
 
 ## ⚡ What PyCAS Does
