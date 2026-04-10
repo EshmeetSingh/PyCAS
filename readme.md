@@ -1,206 +1,234 @@
-# PyCAS — A Minimal Symbolic Calculus Engine in Python
+# PyCAS — A Symbolic Math Engine That Refuses to Guess
 
-PyCAS is a **minimal, invariant-driven symbolic calculus engine** written in Python.
-It supports symbolic **differentiation** and **integration** over a deliberately constrained algebraic domain, with a strong emphasis on **correctness, canonical representations, and explicit failure modes**.
+Most symbolic math tools try to “handle everything” — often by making silent assumptions.
 
-Rather than maximizing feature coverage, PyCAS prioritizes **structural discipline**, **predictable behavior**, and **clear architectural boundaries**.
+**PyCAS does the opposite.**
 
----
+It operates on a strictly defined algebraic domain, enforces structural invariants at every stage, and explicitly rejects anything it cannot guarantee to be correct.
 
-## 🔗 Live Demo
-
-A deployed Streamlit demo is available here:
-
-**[https://eshmeetsingh-pycas-uistreamlit-app-n3wvfl.streamlit.app](https://eshmeetsingh-pycas-uistreamlit-app-n3wvfl.streamlit.app)**
-
-The demo allows you to:
-
-* enter symbolic expressions
-* inspect their canonical normalized form
-* compute derivatives and integrals (within the supported domain)
-* observe explicit failure messages for unsupported mathematics
+> No heuristics. No silent fallbacks. No guesswork.
 
 ---
 
-## ✨ Core Capabilities
+## 🚀 Live Demo
 
-* Symbolic differentiation
-* Symbolic integration (restricted domain)
-* Exact arithmetic using rational numbers (`fractions.Fraction`)
-* Canonical AST normalization
-* Step-by-step reasoning output
-* Loud, explicit failure for unsupported operations
+👉 https://eshmeetsingh-pycas-uistreamlit-app-n3wvfl.streamlit.app
+
+Try:
+- `x^2 + 2x + 1`
+- `sin(x) + x^2`
+- `exp(x) + cos(x)`
 
 ---
 
-## 🧮 Supported Expressions
+## ⚡ What PyCAS Does
 
-PyCAS operates over a **single-variable algebraic domain** and supports:
+- Parses expressions into a canonical AST (7 node types)  
+- Handles 11 distinct input forms (implicit multiplication, unary minus, powers, functions, etc.)  
+- Enforces 13 structural invariants across all transformations  
+- Performs rule-based symbolic differentiation and integration  
+- Produces exact results using rational arithmetic  
+- Validated on 30 expressions:
+  - 28 exact results  
+  - 2 explicitly rejected (by design)  
+  - 0 silent failures  
 
-* Constants
-* A single variable (internally canonicalized)
-* Monomials (`x^n`, `n ≥ 0`)
-* Constant multiples
-* Sums
-* Products of atomic factors (normalized form)
-* Elementary functions:
+---
 
-  * `sin(x)`
-  * `cos(x)`
-  * `exp(x)`
+## 🔄 Execution Model
 
-Expressions outside this domain are **rejected explicitly**, rather than being approximated or simplified heuristically.
+```mermaid
+flowchart LR
+    A["Expression (user variable)"] --> B[Parser]
+    B --> C["Canonical AST (x)"]
+    C --> D[Normalization]
+    D --> E[Rule Engine]
+    E --> F[Normalization]
+    F --> G["Pretty Printer (restore variable)"]
+    G --> H[Output]
+```
+
+---
+
+## 🧪 Example
+
+**Input**
+```
+sin(x) + x^2
+```
+
+**Derivative**
+```
+cos(x) + 2x
+```
+
+**Unsupported**
+```
+sin(x^2)
+→ Rejected (chain rule not supported)
+```
+
+---
+
+## 🧮 Supported Domain
+
+PyCAS operates over a strict single-variable algebraic domain:
+
+- Constants  
+- One variable  
+- Monomials (`x^n`, n ≥ 0)  
+- Constant multiples  
+- Sums  
+- Products (normalized form)  
+- Elementary functions:
+  - `sin(x)`  
+  - `cos(x)`  
+  - `exp(x)`  
+
+Anything outside this domain is **explicitly rejected**.
+
+---
+
+## ⚠️ What PyCAS Does NOT Do
+
+- No chain rule  
+- No multivariable calculus  
+- No heuristic simplification  
+- No silent approximations  
+
+If it cannot guarantee correctness, it **fails**.
+
+---
+
+## 📊 System Properties
+
+- AST Node Types: 7  
+- Input Forms Supported: 11  
+- Invariants Enforced: 13  
+- Test Coverage: 30 expressions  
+- Silent Failures: 0  
 
 ---
 
 ## 🧠 Design Philosophy
 
-PyCAS is built around the following principles:
-
-* **Correctness over coverage**
-* **Explicit invariants over ad-hoc simplification**
-* **Canonical representations**
-* **Clear separation of concerns**
-* **No silent fallbacks**
-
-Unsupported mathematics is treated as an error condition, not an opportunity for guesswork.
+- Correctness over coverage  
+- Explicit invariants over ad-hoc simplification  
+- Canonical representations  
+- Clear separation of concerns  
+- No silent fallbacks  
 
 ---
+
+## 🔤 Variable Handling
+
+PyCAS is internally a **single-variable system**, but remains **variable-agnostic for the user**.
+
+- Any input variable is accepted (`x`, `t`, `y`, etc.)
+- Internally, all expressions are canonicalized to a single variable (`x`)
+- All parsing, normalization, and rule application operate on this canonical form
+- During output, the original variable name is restored
+
+### Example
+
+Input:
+```
+t^2 + 2t
+```
+
+Internal representation:
+```
+x^2 + 2x
+```
+
+Derivative:
+```
+2x + 2
+```
+
+Output:
+```
+2t + 2
+```
+
+---
+
+This design allows:
+- simpler rule definitions
+- consistent invariants
+- separation between computation and presentation
 
 ## 🏗 Architecture Overview
 
-PyCAS is structured as a small, clearly layered system:
+### Parser
+- Recursive-descent parser  
+- Handles implicit multiplication (`2x`, `xsin(x)`)  
+- Converts input → AST  
+- Performs desugaring (`sin^2(x)` → `(sin(x))^2`)  
 
-### 1. Parser
+### AST
 
-* Recursive-descent parser
-* Converts user input (`str`) into an AST
-* Supports:
-
-  * implicit multiplication (`2x`, `xsin(x)`)
-  * explicit multiplication (`*`)
-  * powers (`^`)
-  * unary minus
-  * function calls (`sin(x)`, `cos(x)`, `exp(x)`)
-* Performs desugaring (e.g. `sin^2(x) → (sin(x))^2`)
-* Preserves the user’s original variable name
-
----
-
-### 2. Abstract Syntax Tree (AST)
-
-All expressions are represented as explicit AST nodes:
-
-```python
-# Constant
+```
 {"type": "const", "value": number}
-
-# Variable
 {"type": "var", "variable": "x"}
-
-# Power (monomial only)
 {"type": "power", "base": <var>, "exp": n}
-
-# Constant multiple
 {"type": "mul", "const": c, "expr": <expression>}
-
-# Product of atomic factors
-{"type": "prod", "factors": [<atomic_expr>, ...]}
-
-# Sum of expressions
-{"type": "sum", "terms": [<expression>, ...]}
-
-# Elementary function
+{"type": "prod", "factors": [...]}
+{"type": "sum", "terms": [...]}
 {"type": "func", "name": "sin|cos|exp", "arg": <var>}
 ```
 
-Only **atomic expressions** may appear as factors inside a product.
-This restriction is enforced consistently throughout the system.
+### Normalization
+- Flattens nested structures  
+- Combines terms  
+- Enforces canonical ordering  
+- Eliminates redundancy  
+
+### Invariants
+- No nested `mul`  
+- At most one constant per product  
+- Functions only accept atomic variables  
+- Only supported function names allowed  
+
+### Rule Engine
+
+**Differentiation**
+- Linearity  
+- Power rule  
+- Constant multiple  
+- `sin`, `cos`, `exp`  
+
+**Integration**
+- Same rule set  
+
+Unsupported operations → explicit failure  
 
 ---
 
-### 3. Normalization
+## 📜 Formal Specification
 
-Normalization is **bottom-up** and invariant-preserving.
+PyCAS includes a formal AST and normalization specification:
 
-Responsibilities include:
+- Defines all node types  
+- Specifies structural invariants  
+- Enforces normalization rules and semantics  
 
-* Flattening nested sums and products
-* Absorbing constants
-* Combining powers of the variable
-* Enforcing canonical ordering
-* Eliminating redundant structure
+See: `examples/AST_spec.txt`
 
-After normalization, **all AST invariants must hold**.
+This specification ensures that:
+- all transformations operate on a canonical representation  
+- invariants are preserved across parsing, differentiation, and integration  
+- no structurally invalid expressions can exist post-normalization  
 
----
-
-### 4. Invariants (Core of the System)
-
-Structural invariants are enforced aggressively via assertion-based checks.
-
-Examples include:
-
-* No nested `mul` nodes
-* No `mul` wrapping constants
-* `power` exponents are `≥ 2` post-normalization
-* `prod` contains only atomic factors
-* At most one constant per product
-* Function arguments must be atomic variables
-* Only supported function names are allowed
-
-Invariants are asserted on:
-
-* normalized input expressions
-* differentiation outputs
-* integration outputs
-
-This prevents silent regressions and guarantees internal consistency.
+> The system is designed such that implementation follows specification — not the other way around.
 
 ---
 
-### 5. Calculus Rules
+## 🖥 UI
 
-Symbolic calculus is implemented as explicit, rule-based transformations over normalized ASTs.
-
-#### Differentiation
-
-* Linearity
-* Power rule
-* Constant multiple rule
-* Elementary functions (`sin`, `cos`, `exp`)
-
-#### Integration
-
-* Linearity
-* Power rule
-* Constant multiple rule
-* Elementary functions (`sin`, `cos`, `exp`)
-
-Operations outside the supported rule set fail explicitly.
-
----
-
-### 6. Pretty Printer
-
-* Converts normalized ASTs into readable mathematical strings
-* Handles precedence, parentheses, and negative coefficients
-* Supports exact fraction and decimal display modes
-* Preserves the user’s original variable name
-
----
-
-## 🖥 User Interface
-
-PyCAS includes a **minimal Streamlit-based UI**.
-
-Design constraints:
-
-* No mathematical logic lives in the UI
-* The UI acts purely as a presentation layer
-* All computation is delegated to the core engine
-
-This separation keeps the system modular, testable, and predictable.
+- Built with Streamlit  
+- Pure presentation layer  
+- No computation logic in UI  
 
 ---
 
@@ -208,44 +236,67 @@ This separation keeps the system modular, testable, and predictable.
 
 ```
 PyCAS/
-├── src/
-│   └── pycas/
-│       ├── core.py
-│       ├── parser.py
-│       ├── normalizer.py
-│       ├── normalizer_rules.py
-│       ├── rules.py
-│       ├── pretty_printer.py
-│       └── errors.py
+├── src/pycas/
+│   ├── core.py
+│   ├── parser.py
+│   ├── normalizer.py
+│   ├── normalizer_rules.py
+│   ├── rules.py
+│   ├── pretty_printer.py
+│   └── errors.py
 │
 ├── ui/
 │   └── streamlit_app.py
 │
 ├── examples/
 │   ├── demo.py
-│   └── invariants.py
-│
-├── README.md
-└── pyproject.toml
+│   ├── invariants.py
+│   └── AST_spec.txt
 ```
 
 ---
 
-## 📌 Why PyCAS Exists
+## 🔮 Future Work
 
-PyCAS was built as a **discipline-focused systems project**, emphasizing:
+PyCAS is intentionally constrained to preserve correctness and structural guarantees.  
+Future extensions must respect these design principles.
 
-* invariant-driven design
-* canonical internal representations
-* explicit reasoning over symbolic mathematics
-* correctness guarantees through restriction
+### Calculus Extensions
+- Chain rule support (requires non-atomic function arguments and AST generalization)  
+- Product rule for non-atomic expressions  
+- Expanded function support (log, tan, etc.)  
 
-It intentionally avoids heuristic simplification in favor of **clarity, predictability, and correctness**.
+### Domain Expansion
+- Multi-variable expressions (would require redefining normalization and invariants)  
+- Broader expression classes beyond monomials and atomic products  
+
+### System Enhancements
+- Step-by-step transformation tracing (rule-level explanations)  
+- More comprehensive test suite across edge cases  
+- Formal verification of invariants  
+
+### Architecture Evolution
+- Pluggable rule system for extending calculus rules safely  
+- Stronger error classification and reporting  
+
+---
+
+> Any extension must preserve PyCAS’s core guarantee:  
+> **No silent failures and no heuristic approximations.**
+
+---
+
+## 📌 Why This Project Exists
+
+PyCAS is a discipline-driven systems project focused on:
+
+- invariant-driven design  
+- canonical representations  
+- rule-based symbolic computation  
+- correctness through restriction  
 
 ---
 
 ## 👤 Author
 
-Built by **Eshmeet Singh**
-
-
+Eshmeet Singh
